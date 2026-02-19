@@ -1,0 +1,639 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Income Tax Calculator (Clean UI)</title>
+  <style>
+    :root{
+      --bg1:#0b1220;
+      --bg2:#0e1933;
+      --card:rgba(255,255,255,.06);
+      --line:rgba(255,255,255,.12);
+      --line2:rgba(255,255,255,.20);
+      --text:#eaf0ff;
+      --muted:#b3bfd9;
+      --red1:#b00020;
+      --red2:#7a0016;
+      --accent:#ff3b5c;
+      --ok:#22c55e;
+      --warn:#f59e0b;
+      --bad:#ef4444;
+      --shadow: 0 18px 55px rgba(0,0,0,.45);
+      --radius:16px;
+      --radiusSm:12px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans";
+    }
+
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      min-height:100vh;
+      font-family: var(--sans);
+      color:var(--text);
+      background:
+        radial-gradient(1000px 700px at 15% 10%, rgba(255,59,92,.18), transparent 55%),
+        radial-gradient(900px 600px at 85% 20%, rgba(34,197,94,.12), transparent 55%),
+        linear-gradient(180deg, var(--bg1), var(--bg2));
+      display:flex;
+      justify-content:center;
+      padding:28px 14px;
+    }
+
+    .app{
+      width:min(980px, 100%);
+      display:grid;
+      grid-template-columns: 1.05fr .95fr;
+      gap:16px;
+      align-items:start;
+    }
+    @media (max-width: 920px){ .app{ grid-template-columns:1fr; } }
+
+    .card{
+      border:1px solid var(--line);
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.04));
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+
+    /* Top bar like screenshot */
+    .topbar{
+      background: linear-gradient(180deg, var(--red1), var(--red2));
+      padding:12px 16px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      border-bottom:1px solid rgba(255,255,255,.12);
+    }
+    .brand{
+      display:flex; align-items:center; gap:10px;
+      font-weight:800;
+      letter-spacing:.7px;
+    }
+    .logo{
+      width:30px; height:30px; border-radius:10px;
+      background: rgba(255,255,255,.14);
+      border:1px solid rgba(255,255,255,.18);
+      display:grid; place-items:center;
+      font-family: var(--mono);
+      font-weight:900;
+    }
+    .brand small{
+      display:block;
+      font-weight:600;
+      letter-spacing:.2px;
+      opacity:.9;
+      margin-top:2px;
+      color: rgba(255,255,255,.90);
+    }
+
+    .tabs{
+      display:flex; gap:10px;
+      background: rgba(0,0,0,.18);
+      border:1px solid rgba(255,255,255,.14);
+      border-radius: 999px;
+      padding:4px;
+    }
+    .tab{
+      border:0;
+      background: transparent;
+      color: rgba(255,255,255,.85);
+      padding:7px 10px;
+      border-radius: 999px;
+      font-weight:700;
+      font-size:12px;
+      cursor:pointer;
+      transition: background .12s ease;
+      white-space:nowrap;
+    }
+    .tab.active{
+      background: rgba(255,255,255,.18);
+      color: #fff;
+    }
+
+    .body{
+      padding:16px;
+    }
+
+    .sectionTitle{
+      margin:0 0 10px;
+      font-size:13px;
+      color: rgba(255,255,255,.9);
+      letter-spacing:.2px;
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+    .pill{
+      font-size:12px;
+      padding:3px 10px;
+      border-radius:999px;
+      border:1px solid var(--line2);
+      background: rgba(255,255,255,.06);
+      color: var(--muted);
+    }
+
+    .formGrid{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:10px;
+    }
+
+    .row{
+      display:grid;
+      grid-template-columns: 170px 1fr;
+      gap:10px;
+      align-items:center;
+      border:1px solid rgba(255,255,255,.08);
+      background: rgba(0,0,0,.12);
+      border-radius: 14px;
+      padding:10px 10px;
+    }
+    @media (max-width: 520px){
+      .row{ grid-template-columns: 1fr; }
+    }
+
+    .label{
+      font-size:12px;
+      color: var(--muted);
+      letter-spacing:.15px;
+      line-height:1.2;
+    }
+    .label .step{
+      font-family: var(--mono);
+      font-size:11px;
+      padding:2px 8px;
+      border-radius:999px;
+      display:inline-block;
+      margin-right:8px;
+      background: rgba(255,255,255,.07);
+      border:1px solid rgba(255,255,255,.12);
+      color: rgba(255,255,255,.82);
+    }
+
+    select, input{
+      width:100%;
+      border-radius: 12px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+      padding:10px 11px;
+      outline:none;
+      font-weight:650;
+      font-size:13px;
+      transition: box-shadow .12s ease, border-color .12s ease;
+    }
+    select:focus, input:focus{
+      border-color: rgba(255,59,92,.45);
+      box-shadow: 0 0 0 4px rgba(255,59,92,.18);
+    }
+    input::placeholder{ color: rgba(179,191,217,.65); font-weight:600; }
+
+    .inline2{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px;
+    }
+    @media (max-width: 520px){
+      .inline2{ grid-template-columns: 1fr; }
+    }
+
+    .actions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:12px;
+    }
+
+    button.btn{
+      border-radius: 12px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.07);
+      color: var(--text);
+      padding:10px 12px;
+      font-weight:750;
+      font-size:13px;
+      cursor:pointer;
+      transition: transform .08s ease, background .12s ease, border-color .12s ease;
+      user-select:none;
+    }
+    button.btn:hover{
+      background: rgba(255,255,255,.10);
+      border-color: rgba(255,255,255,.18);
+    }
+    button.btn:active{ transform: translateY(1px); }
+
+    .btn.primary{
+      background: rgba(255,59,92,.18);
+      border-color: rgba(255,59,92,.40);
+    }
+    .btn.primary:hover{
+      background: rgba(255,59,92,.24);
+      border-color: rgba(255,59,92,.55);
+    }
+    .btn.ghost{
+      background: transparent;
+    }
+    .btn.danger{
+      background: rgba(239,68,68,.14);
+      border-color: rgba(239,68,68,.35);
+    }
+
+    .note{
+      margin-top:10px;
+      font-size:12px;
+      color: rgba(179,191,217,.92);
+      line-height:1.5;
+      padding:10px 12px;
+      border-radius: 14px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.04);
+    }
+
+    /* Results panel */
+    .resultsHeader{
+      padding:14px 16px;
+      border-bottom:1px solid rgba(255,255,255,.08);
+      background: linear-gradient(180deg, rgba(255,255,255,.05), transparent);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+    }
+    .resultsHeader h2{
+      margin:0;
+      font-size:14px;
+      letter-spacing:.2px;
+    }
+
+    .status{
+      min-height: 18px;
+      font-size:12px;
+      color: var(--muted);
+    }
+    .status.ok{ color: #bbf7d0; }
+    .status.warn{ color: #fde68a; }
+    .status.bad{ color: #fecaca; }
+
+    .table{
+      padding:14px 16px 16px;
+      display:grid;
+      gap:10px;
+    }
+    .lineItem{
+      display:grid;
+      grid-template-columns: 1fr 160px;
+      gap:10px;
+      align-items:center;
+      border:1px solid rgba(255,255,255,.09);
+      background: rgba(0,0,0,.12);
+      border-radius: 14px;
+      padding:10px 10px;
+    }
+    .lineItem .name{
+      color: rgba(255,255,255,.90);
+      font-weight:750;
+      font-size:13px;
+    }
+    .lineItem .sub{
+      color: var(--muted);
+      font-size:12px;
+      margin-top:3px;
+      line-height:1.25;
+    }
+    .valueBox{
+      text-align:right;
+      font-family: var(--mono);
+      font-weight:900;
+      font-size:13px;
+      padding:10px 10px;
+      border-radius: 12px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.06);
+    }
+    .total{
+      border-color: rgba(34,197,94,.32);
+      background: rgba(34,197,94,.10);
+    }
+
+    .footer{
+      padding:10px 16px 14px;
+      border-top:1px solid rgba(255,255,255,.08);
+      color: rgba(179,191,217,.9);
+      font-size:12px;
+      line-height:1.45;
+    }
+
+    .srOnly{
+      position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden;
+      clip: rect(0,0,0,0); border:0;
+    }
+  </style>
+</head>
+
+<body>
+  <main class="app" aria-label="Income Tax Calculator">
+    <!-- Left: Inputs -->
+    <section class="card">
+      <header class="topbar">
+        <div class="brand">
+          <div class="logo">₹</div>
+          <div>
+            TAXMANN'S
+            <small>INCOME &amp; TAX CALCULATOR</small>
+          </div>
+        </div>
+
+        <div class="tabs" role="tablist" aria-label="Calculator tabs">
+          <button class="tab active" role="tab" aria-selected="true" type="button">Tax Calculator</button>
+          <button class="tab" role="tab" aria-selected="false" type="button">Income &amp; Tax</button>
+        </div>
+      </header>
+
+      <div class="body">
+        <h3 class="sectionTitle">Taxpayer details <span class="pill">Simple • Clean • DOM</span></h3>
+
+        <form id="taxForm" class="formGrid" autocomplete="off">
+          <div class="row">
+            <div class="label"><span class="step">Step 1</span>Assessment Year</div>
+            <select id="ay" aria-label="Assessment Year">
+              <option value="AY2020">2020–21 (Old-style demo)</option>
+              <option value="CUSTOM">Custom (edit slabs in JS)</option>
+            </select>
+          </div>
+
+          <div class="row">
+            <div class="label"><span class="step">Step 2</span>Taxpayer</div>
+            <select id="taxpayer" aria-label="Taxpayer type">
+              <option value="individual">Individual</option>
+              <option value="other" disabled>Other (not implemented)</option>
+            </select>
+          </div>
+
+          <div class="row">
+            <div class="label"><span class="step">Step 3</span>Profile</div>
+            <div class="inline2">
+              <select id="ageGroup" aria-label="Age group">
+                <option value="lt60">Age &lt; 60</option>
+                <option value="60to79">Age 60–79</option>
+                <option value="80plus">Age 80+</option>
+              </select>
+
+              <select id="gender" aria-label="Gender">
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="label"><span class="step">Step 4</span>Residential status</div>
+            <select id="resStatus" aria-label="Residential status">
+              <option value="resident">Resident</option>
+              <option value="nonresident">Non-resident</option>
+            </select>
+          </div>
+
+          <div class="row">
+            <div class="label"><span class="step">Step 5</span>Net taxable income</div>
+            <input id="income" type="number" min="0" step="1" placeholder="e.g., 850000" aria-label="Net taxable income in INR" />
+          </div>
+
+          <div class="actions">
+            <button class="btn primary" id="calcBtn" type="button">Calculate</button>
+            <button class="btn ghost" id="fillBtn" type="button">Fill sample</button>
+            <button class="btn danger" id="resetBtn" type="button">Reset</button>
+          </div>
+
+          <div class="note" id="noteBox">
+            This is a clean assignment-style calculator UI. For real filing, rules vary by year, regime, deductions, rebates, marginal relief, and special rates.
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- Right: Outputs -->
+    <section class="card" aria-label="Tax computation">
+      <div class="resultsHeader">
+        <h2>YOUR TAX COMPUTATION</h2>
+        <div id="status" class="status" aria-live="polite"></div>
+      </div>
+
+      <div class="table">
+        <div class="lineItem">
+          <div>
+            <div class="name">Income Tax</div>
+            <div class="sub">Calculated from slabs (demo for individuals).</div>
+          </div>
+          <div class="valueBox" id="outTax">₹0</div>
+        </div>
+
+        <div class="lineItem">
+          <div>
+            <div class="name">Surcharge</div>
+            <div class="sub">Based on income thresholds (demo).</div>
+          </div>
+          <div class="valueBox" id="outSurcharge">₹0</div>
+        </div>
+
+        <div class="lineItem">
+          <div>
+            <div class="name">Health &amp; Education Cess</div>
+            <div class="sub">@ 4% on (Income Tax + Surcharge).</div>
+          </div>
+          <div class="valueBox" id="outCess">₹0</div>
+        </div>
+
+        <div class="lineItem">
+          <div>
+            <div class="name">Total Tax Liability</div>
+            <div class="sub">Income Tax + Surcharge + Cess.</div>
+          </div>
+          <div class="valueBox total" id="outTotal">₹0</div>
+        </div>
+      </div>
+
+      <div class="footer">
+        <div><strong>Formatting:</strong> Indian number format, rounded to nearest rupee.</div>
+        <div style="margin-top:6px; opacity:.9">
+          Tip: Change slab definitions in the JS section (<span style="font-family:var(--mono)">getSlabs()</span>) to match your exact syllabus/AY.
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    (() => {
+      const el = (id) => document.getElementById(id);
+
+      const ay = el("ay");
+      const taxpayer = el("taxpayer");
+      const ageGroup = el("ageGroup");
+      const gender = el("gender");
+      const resStatus = el("resStatus");
+      const income = el("income");
+
+      const status = el("status");
+      const outTax = el("outTax");
+      const outSurcharge = el("outSurcharge");
+      const outCess = el("outCess");
+      const outTotal = el("outTotal");
+
+      const calcBtn = el("calcBtn");
+      const resetBtn = el("resetBtn");
+      const fillBtn = el("fillBtn");
+
+      const fmt = new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 });
+
+      function setStatus(msg, type="") {
+        status.className = "status" + (type ? (" " + type) : "");
+        status.textContent = msg;
+      }
+
+      function rupees(n) {
+        const v = Math.max(0, Math.round(Number(n) || 0));
+        return "₹" + fmt.format(v);
+      }
+
+      // Demo slabs (editable). Uses 3 age groups for an "old-style" individual slab pattern.
+      // Format: [{ upto: number, rate: decimal }, ...] where "upto" is upper bound.
+      function getSlabs(ayKey, ageKey) {
+        // Default: <60
+        let basicExemption = 250000;
+        if (ageKey === "60to79") basicExemption = 300000;
+        if (ageKey === "80plus") basicExemption = 500000;
+
+        // Slabs after basic exemption:
+        // - Next 2.5L @5%
+        // - Next 5L @20%
+        // - Above @30%
+        // (This is a common, assignment-friendly structure.)
+        return {
+          basicExemption,
+          brackets: [
+            { upto: basicExemption, rate: 0.00 },
+            { upto: basicExemption + 250000, rate: 0.05 },
+            { upto: basicExemption + 750000, rate: 0.20 },
+            { upto: Infinity, rate: 0.30 }
+          ]
+        };
+      }
+
+      function computeSlabTax(taxableIncome, slabDef) {
+        const x = Math.max(0, taxableIncome);
+        const brackets = slabDef.brackets;
+
+        let tax = 0;
+        let prev = 0;
+
+        for (const b of brackets) {
+          const upper = b.upto;
+          const band = Math.min(x, upper) - prev;
+          if (band > 0) tax += band * b.rate;
+          prev = upper;
+          if (x <= upper) break;
+        }
+
+        return tax;
+      }
+
+      function surchargeRate(totalIncome) {
+        const x = Math.max(0, totalIncome);
+        // Common surcharge tiers for individuals (demo)
+        if (x > 50000000) return 0.37; // > 5 Cr
+        if (x > 20000000) return 0.25; // > 2 Cr
+        if (x > 10000000) return 0.15; // > 1 Cr
+        if (x > 5000000)  return 0.10; // > 50 L
+        return 0.00;
+      }
+
+      function compute() {
+        const inc = Number(income.value);
+
+        if (!Number.isFinite(inc) || inc < 0) {
+          setStatus("Enter a valid income (0 or more).", "bad");
+          return;
+        }
+
+        if (taxpayer.value !== "individual") {
+          setStatus("Only Individual is implemented in this template.", "warn");
+          return;
+        }
+
+        const slabDef = getSlabs(ay.value, ageGroup.value);
+        const baseTax = computeSlabTax(inc, slabDef);
+
+        const sRate = surchargeRate(inc);
+        const surcharge = baseTax * sRate;
+
+        // 4% cess on (tax + surcharge)
+        const cess = (baseTax + surcharge) * 0.04;
+
+        const total = baseTax + surcharge + cess;
+
+        outTax.textContent = rupees(baseTax);
+        outSurcharge.textContent = rupees(surcharge);
+        outCess.textContent = rupees(cess);
+        outTotal.textContent = rupees(total);
+
+        const slabMsg =
+          (ageGroup.value === "lt60") ? "Age < 60 slabs used." :
+          (ageGroup.value === "60to79") ? "Senior slabs used." :
+          "Super-senior slabs used.";
+
+        setStatus(`Calculated. ${slabMsg}`, "ok");
+      }
+
+      function resetAll() {
+        ay.value = "AY2020";
+        taxpayer.value = "individual";
+        ageGroup.value = "lt60";
+        gender.value = "male";
+        resStatus.value = "resident";
+        income.value = "";
+
+        outTax.textContent = "₹0";
+        outSurcharge.textContent = "₹0";
+        outCess.textContent = "₹0";
+        outTotal.textContent = "₹0";
+
+        setStatus("Ready.", "");
+      }
+
+      function fillSample() {
+        ay.value = "AY2020";
+        taxpayer.value = "individual";
+        ageGroup.value = "lt60";
+        gender.value = "male";
+        resStatus.value = "resident";
+        income.value = "850000";
+        compute();
+      }
+
+      // Auto-calc for a smoother UI
+      const autoInputs = [ay, taxpayer, ageGroup, gender, resStatus, income];
+      autoInputs.forEach(node => node.addEventListener("input", () => {
+        if (income.value.trim() === "") {
+          setStatus("Ready.", "");
+          outTax.textContent = "₹0";
+          outSurcharge.textContent = "₹0";
+          outCess.textContent = "₹0";
+          outTotal.textContent = "₹0";
+          return;
+        }
+        compute();
+      }));
+
+      calcBtn.addEventListener("click", compute);
+      resetBtn.addEventListener("click", resetAll);
+      fillBtn.addEventListener("click", fillSample);
+
+      resetAll();
+    })();
+  </script>
+</body>
+</html>
