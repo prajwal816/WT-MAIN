@@ -1,0 +1,695 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>6×6 Sudoku Solver</title>
+  <style>
+    :root{
+      --bg1:#0b1220;
+      --bg2:#0f1b33;
+      --card:#0f172a;
+      --card2:#111c36;
+      --text:#e7eefc;
+      --muted:#a9b7d0;
+      --line:rgba(255,255,255,.14);
+      --line-strong:rgba(255,255,255,.38);
+      --accent:#7c3aed;     /* violet */
+      --accent2:#22c55e;    /* green */
+      --danger:#ef4444;     /* red */
+      --warn:#f59e0b;       /* amber */
+      --focus:rgba(124,58,237,.35);
+      --shadow: 0 18px 55px rgba(0,0,0,.45);
+      --radius:16px;
+    }
+
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      min-height:100vh;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+      color:var(--text);
+      background:
+        radial-gradient(1200px 700px at 15% 10%, rgba(124,58,237,.25), transparent 55%),
+        radial-gradient(900px 600px at 85% 15%, rgba(34,197,94,.18), transparent 55%),
+        linear-gradient(180deg, var(--bg1), var(--bg2));
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:28px 14px;
+    }
+
+    .app{
+      width:min(920px, 100%);
+      display:grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap:18px;
+    }
+
+    @media (max-width: 860px){
+      .app{ grid-template-columns: 1fr; }
+    }
+
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+
+    .header{
+      padding:18px 18px 12px;
+      background: linear-gradient(180deg, rgba(255,255,255,.05), transparent);
+      border-bottom:1px solid rgba(255,255,255,.08);
+    }
+
+    .title{
+      margin:0;
+      font-size:18px;
+      font-weight:700;
+      letter-spacing:.2px;
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+
+    .badge{
+      font-size:12px;
+      padding:4px 10px;
+      border-radius:999px;
+      background: rgba(124,58,237,.18);
+      border:1px solid rgba(124,58,237,.35);
+      color:#ddd6fe;
+      font-weight:600;
+    }
+
+    .subtitle{
+      margin:8px 0 0;
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.4;
+    }
+
+    .content{
+      padding:18px;
+    }
+
+    .gridWrap{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:10px 0 18px;
+    }
+
+    .grid{
+      width:min(520px, 100%);
+      aspect-ratio: 1 / 1;
+      display:grid;
+      grid-template-columns: repeat(6, 1fr);
+      border-radius:14px;
+      overflow:hidden;
+      background: rgba(255,255,255,.02);
+      border:1px solid var(--line-strong);
+    }
+
+    .cell{
+      position:relative;
+      border:1px solid var(--line);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background: rgba(17,28,54,.35);
+      transition: background .12s ease, box-shadow .12s ease, border-color .12s ease;
+    }
+
+    /* Thick subgrid lines: 2x3 boxes */
+    .thickTop{ border-top:2px solid var(--line-strong); }
+    .thickLeft{ border-left:2px solid var(--line-strong); }
+    .thickRight{ border-right:2px solid var(--line-strong); }
+    .thickBottom{ border-bottom:2px solid var(--line-strong); }
+
+    input.sudoku{
+      width:100%;
+      height:100%;
+      border:0;
+      outline:0;
+      background: transparent;
+      color:var(--text);
+      text-align:center;
+      font-size: clamp(18px, 4.4vw, 30px);
+      font-weight:700;
+      letter-spacing:.5px;
+      caret-color: var(--accent);
+    }
+
+    input.sudoku::selection{ background: rgba(124,58,237,.35); }
+    input.sudoku:focus{
+      box-shadow: inset 0 0 0 3px var(--focus);
+      background: rgba(124,58,237,.08);
+    }
+
+    .given input.sudoku{
+      color:#dbeafe;
+      opacity:.95;
+    }
+
+    .given{
+      background: rgba(59,130,246,.06);
+    }
+
+    .conflict{
+      background: rgba(239,68,68,.10);
+    }
+    .conflict input.sudoku{
+      color: #fecaca;
+    }
+
+    .panel{
+      display:grid;
+      gap:14px;
+    }
+
+    .row{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+
+    button{
+      appearance:none;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.06);
+      color:var(--text);
+      padding:10px 12px;
+      border-radius:12px;
+      font-weight:650;
+      font-size:13px;
+      cursor:pointer;
+      transition: transform .08s ease, background .12s ease, border-color .12s ease;
+      user-select:none;
+    }
+
+    button:hover{
+      background: rgba(255,255,255,.09);
+      border-color: rgba(255,255,255,.18);
+    }
+    button:active{ transform: translateY(1px); }
+
+    .primary{
+      background: rgba(124,58,237,.22);
+      border-color: rgba(124,58,237,.45);
+    }
+    .primary:hover{
+      background: rgba(124,58,237,.28);
+      border-color: rgba(124,58,237,.55);
+    }
+
+    .success{
+      background: rgba(34,197,94,.18);
+      border-color: rgba(34,197,94,.42);
+    }
+    .success:hover{
+      background: rgba(34,197,94,.22);
+      border-color: rgba(34,197,94,.52);
+    }
+
+    .danger{
+      background: rgba(239,68,68,.16);
+      border-color: rgba(239,68,68,.38);
+    }
+    .danger:hover{
+      background: rgba(239,68,68,.20);
+      border-color: rgba(239,68,68,.48);
+    }
+
+    .hint{
+      font-size:13px;
+      color:var(--muted);
+      line-height:1.55;
+      background: rgba(255,255,255,.03);
+      border:1px solid rgba(255,255,255,.08);
+      border-radius: 14px;
+      padding:12px 12px;
+    }
+
+    .status{
+      min-height: 18px;
+      font-size:13px;
+      color: var(--muted);
+      padding:2px 2px 0;
+    }
+
+    .status.ok{ color: #bbf7d0; }
+    .status.bad{ color: #fecaca; }
+    .status.warn{ color: #fde68a; }
+
+    .small{
+      font-size:12px;
+      color:var(--muted);
+    }
+
+    .kbd{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 12px;
+      padding: 2px 7px;
+      border-radius: 8px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.25);
+      color: #e5e7eb;
+    }
+  </style>
+</head>
+<body>
+  <main class="app" aria-label="6x6 Sudoku Solver App">
+    <section class="card" aria-label="Sudoku Grid">
+      <div class="header">
+        <h1 class="title">Sudoku <span class="badge">6×6</span></h1>
+        <p class="subtitle">
+          Enter digits <strong>1–6</strong>. Each row, column, and 2×3 box must contain all digits without repetition.
+        </p>
+      </div>
+
+      <div class="content">
+        <div class="gridWrap">
+          <div id="grid" class="grid" role="grid" aria-label="6 by 6 Sudoku grid"></div>
+        </div>
+
+        <div class="row">
+          <button id="solveBtn" class="primary">Solve</button>
+          <button id="validateBtn">Validate</button>
+          <button id="clearBtn" class="danger">Clear</button>
+          <button id="exampleBtn" class="success">Load example</button>
+          <button id="lockBtn">Lock givens</button>
+          <button id="unlockBtn">Unlock</button>
+        </div>
+
+        <div id="status" class="status" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <aside class="card" aria-label="Controls and Help">
+      <div class="header">
+        <h2 class="title">Controls <span class="badge">Clean UI</span></h2>
+        <p class="subtitle">Keyboard-friendly input, conflict highlighting, and a backtracking solver.</p>
+      </div>
+
+      <div class="content panel">
+        <div class="hint">
+          <div style="margin-bottom:8px; font-weight:700; color:#e5e7eb;">Tips</div>
+          <div class="small">
+            - Click a cell and type <span class="kbd">1</span>…<span class="kbd">6</span> (or <span class="kbd">Backspace</span> to clear).<br/>
+            - Move with <span class="kbd">↑</span> <span class="kbd">↓</span> <span class="kbd">←</span> <span class="kbd">→</span> or <span class="kbd">Tab</span>.<br/>
+            - Use <span class="kbd">Lock givens</span> after you enter the starting clues.
+          </div>
+        </div>
+
+        <div class="hint">
+          <div style="margin-bottom:8px; font-weight:700; color:#e5e7eb;">What “Validate” checks</div>
+          <div class="small">
+            It marks conflicts (duplicates) in any row, column, or 2×3 box, and shows a message if the current grid can be solved.
+          </div>
+        </div>
+
+        <div class="hint">
+          <div style="margin-bottom:8px; font-weight:700; color:#e5e7eb;">Customizing</div>
+          <div class="small">
+            To switch styles: edit CSS variables in <span class="kbd">:root</span>.<br/>
+            To change puzzle size: update <span class="kbd">SIZE</span>, <span class="kbd">BOX_R</span>, <span class="kbd">BOX_C</span> in JS (this file).
+          </div>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+<script>
+(() => {
+  const SIZE = 6;
+  const BOX_R = 2; // box height
+  const BOX_C = 3; // box width
+  const DIGITS = Array.from({ length: SIZE }, (_, i) => String(i + 1));
+
+  const gridEl = document.getElementById("grid");
+  const statusEl = document.getElementById("status");
+
+  const solveBtn = document.getElementById("solveBtn");
+  const validateBtn = document.getElementById("validateBtn");
+  const clearBtn = document.getElementById("clearBtn");
+  const exampleBtn = document.getElementById("exampleBtn");
+  const lockBtn = document.getElementById("lockBtn");
+  const unlockBtn = document.getElementById("unlockBtn");
+
+  /** State **/
+  let locked = false;
+
+  function setStatus(msg, type = "") {
+    statusEl.className = "status" + (type ? " " + type : "");
+    statusEl.textContent = msg;
+  }
+
+  function idx(r, c){ return r * SIZE + c; }
+
+  function buildGrid(){
+    gridEl.innerHTML = "";
+    for (let r = 0; r < SIZE; r++){
+      for (let c = 0; c < SIZE; c++){
+        const cell = document.createElement("div");
+        cell.className = "cell";
+        cell.setAttribute("role", "gridcell");
+
+        // Thick borders for 2x3 boxes
+        if (r % BOX_R === 0) cell.classList.add("thickTop");
+        if (c % BOX_C === 0) cell.classList.add("thickLeft");
+        if (r === SIZE - 1) cell.classList.add("thickBottom");
+        if (c === SIZE - 1) cell.classList.add("thickRight");
+
+        const input = document.createElement("input");
+        input.className = "sudoku";
+        input.inputMode = "numeric";
+        input.autocomplete = "off";
+        input.maxLength = 1;
+        input.dataset.r = String(r);
+        input.dataset.c = String(c);
+        input.setAttribute("aria-label", `Row ${r + 1}, Column ${c + 1}`);
+
+        // Restrict input to 1..6 or empty
+        input.addEventListener("input", (e) => {
+          if (isGivenCell(input) && locked) {
+            input.value = input.dataset.givenValue || "";
+            return;
+          }
+          const v = (input.value || "").trim();
+          if (!v) {
+            input.value = "";
+          } else if (!DIGITS.includes(v)) {
+            input.value = "";
+          }
+          markConflicts();
+        });
+
+        // Keyboard navigation (arrows)
+        input.addEventListener("keydown", (e) => {
+          const r = Number(input.dataset.r);
+          const c = Number(input.dataset.c);
+          const move = (nr, nc) => {
+            if (nr < 0 || nc < 0 || nr >= SIZE || nc >= SIZE) return;
+            const next = getInput(nr, nc);
+            if (next) { next.focus(); next.select(); }
+          };
+
+          if (e.key === "ArrowUp") { e.preventDefault(); move(r - 1, c); }
+          if (e.key === "ArrowDown") { e.preventDefault(); move(r + 1, c); }
+          if (e.key === "ArrowLeft") { e.preventDefault(); move(r, c - 1); }
+          if (e.key === "ArrowRight") { e.preventDefault(); move(r, c + 1); }
+        });
+
+        cell.appendChild(input);
+        gridEl.appendChild(cell);
+      }
+    }
+  }
+
+  function getAllInputs(){
+    return Array.from(gridEl.querySelectorAll("input.sudoku"));
+  }
+
+  function getInput(r, c){
+    return gridEl.querySelector(`input.sudoku[data-r="${r}"][data-c="${c}"]`);
+  }
+
+  function readBoard(){
+    const board = Array.from({ length: SIZE }, () => Array(SIZE).fill(0));
+    for (const inp of getAllInputs()){
+      const r = Number(inp.dataset.r);
+      const c = Number(inp.dataset.c);
+      const v = inp.value.trim();
+      board[r][c] = v ? Number(v) : 0;
+    }
+    return board;
+  }
+
+  function writeBoard(board, { respectLocked = true } = {}){
+    for (let r = 0; r < SIZE; r++){
+      for (let c = 0; c < SIZE; c++){
+        const inp = getInput(r, c);
+        const val = board[r][c] ? String(board[r][c]) : "";
+        if (respectLocked && isGivenCell(inp) && locked) continue;
+        inp.value = val;
+      }
+    }
+    markConflicts();
+  }
+
+  function clearAll(){
+    for (const inp of getAllInputs()){
+      inp.value = "";
+      inp.dataset.givenValue = "";
+      inp.closest(".cell")?.classList.remove("given", "conflict");
+    }
+    locked = false;
+    setStatus("Cleared. Enter a puzzle, then lock givens if you want.", "");
+  }
+
+  function lockGivens(){
+    for (const inp of getAllInputs()){
+      const v = inp.value.trim();
+      inp.dataset.givenValue = v;
+      const cell = inp.closest(".cell");
+      if (v) cell.classList.add("given");
+      else cell.classList.remove("given");
+    }
+    locked = true;
+    setStatus("Givens locked. You can still solve/validate.", "ok");
+  }
+
+  function unlockAll(){
+    locked = false;
+    for (const inp of getAllInputs()){
+      inp.closest(".cell")?.classList.remove("given");
+    }
+    setStatus("Unlocked. You can edit any cell.", "warn");
+  }
+
+  function isGivenCell(input){
+    const given = (input.dataset.givenValue || "").trim();
+    return Boolean(given);
+  }
+
+  /** Validation **/
+  function isValidMove(board, r, c, val){
+    // row
+    for (let j = 0; j < SIZE; j++){
+      if (j !== c && board[r][j] === val) return false;
+    }
+    // col
+    for (let i = 0; i < SIZE; i++){
+      if (i !== r && board[i][c] === val) return false;
+    }
+    // box
+    const br = Math.floor(r / BOX_R) * BOX_R;
+    const bc = Math.floor(c / BOX_C) * BOX_C;
+    for (let i = br; i < br + BOX_R; i++){
+      for (let j = bc; j < bc + BOX_C; j++){
+        if ((i !== r || j !== c) && board[i][j] === val) return false;
+      }
+    }
+    return true;
+  }
+
+  function markConflicts(){
+    const board = readBoard();
+    // Clear previous conflict marks
+    for (const inp of getAllInputs()){
+      inp.closest(".cell")?.classList.remove("conflict");
+    }
+
+    let conflicts = 0;
+    for (let r = 0; r < SIZE; r++){
+      for (let c = 0; c < SIZE; c++){
+        const v = board[r][c];
+        if (!v) continue;
+        if (!isValidMove(board, r, c, v)){
+          conflicts++;
+          getInput(r, c).closest(".cell")?.classList.add("conflict");
+        }
+      }
+    }
+
+    if (conflicts > 0){
+      setStatus(`Conflicts found: ${conflicts}. Fix duplicates before solving.`, "bad");
+    } else {
+      setStatus("No conflicts detected.", "ok");
+    }
+  }
+
+  /** Solver: backtracking **/
+  function findEmpty(board){
+    for (let r = 0; r < SIZE; r++){
+      for (let c = 0; c < SIZE; c++){
+        if (board[r][c] === 0) return [r, c];
+      }
+    }
+    return null;
+  }
+
+  function solveBoard(board){
+    const empty = findEmpty(board);
+    if (!empty) return true;
+    const [r, c] = empty;
+
+    for (let val = 1; val <= SIZE; val++){
+      if (isValidMove(board, r, c, val)){
+        board[r][c] = val;
+        if (solveBoard(board)) return true;
+        board[r][c] = 0;
+      }
+    }
+    return false;
+  }
+
+  function validateCurrent(){
+    const board = readBoard();
+
+    // Conflicts?
+    for (let r = 0; r < SIZE; r++){
+      for (let c = 0; c < SIZE; c++){
+        const v = board[r][c];
+        if (v && !isValidMove(board, r, c, v)){
+          markConflicts();
+          setStatus("Invalid grid: duplicates exist. Fix conflicts and try again.", "bad");
+          return;
+        }
+      }
+    }
+
+    // Solvable?
+    const copy = board.map(row => row.slice());
+    const ok = solveBoard(copy);
+    markConflicts();
+    setStatus(ok ? "Valid so far and solvable (at least one solution found)." : "No solution found for this grid.", ok ? "ok" : "bad");
+  }
+
+  /** Example puzzle generation (safe + consistent) **/
+  function baseSolution(){
+    // Pattern that respects 2x3 boxes (valid solved grid)
+    // Row groups of 2 and col groups of 3.
+    const grid = Array.from({ length: SIZE }, () => Array(SIZE).fill(0));
+    for (let r = 0; r < SIZE; r++){
+      for (let c = 0; c < SIZE; c++){
+        // Shift pattern: (r*BOX_C + floor(r/BOX_R) + c) mod SIZE
+        const v = (r * BOX_C + Math.floor(r / BOX_R) + c) % SIZE;
+        grid[r][c] = v + 1;
+      }
+    }
+    return grid;
+  }
+
+  function shuffle(arr){
+    for (let i = arr.length - 1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+
+  function permuteSolution(sol){
+    // Permute digits 1..6
+    const map = shuffle([1,2,3,4,5,6]);
+    const mapped = sol.map(row => row.map(v => map[v - 1]));
+
+    // Shuffle rows within each band (band size = BOX_R)
+    const rows = [];
+    for (let b = 0; b < SIZE; b += BOX_R){
+      const band = [b, b+1];
+      shuffle(band);
+      rows.push(...band);
+    }
+
+    // Shuffle bands themselves
+    const bandStarts = shuffle([0, BOX_R, 2*BOX_R]);
+    const finalRows = bandStarts.flatMap(s => rows.filter(r => Math.floor(r/BOX_R) === Math.floor(s/BOX_R)));
+
+    // Shuffle cols within each stack (stack size = BOX_C)
+    const cols = [];
+    for (let s = 0; s < SIZE; s += BOX_C){
+      const stack = [s, s+1, s+2];
+      shuffle(stack);
+      cols.push(...stack);
+    }
+
+    // Shuffle stacks themselves
+    const stackStarts = shuffle([0, BOX_C]);
+    const finalCols = stackStarts.flatMap(s => cols.filter(c => Math.floor(c/BOX_C) === Math.floor(s/BOX_C)));
+
+    const out = Array.from({ length: SIZE }, () => Array(SIZE).fill(0));
+    for (let r = 0; r < SIZE; r++){
+      for (let c = 0; c < SIZE; c++){
+        out[r][c] = mapped[finalRows[r]][finalCols[c]];
+      }
+    }
+    return out;
+  }
+
+  function makePuzzleFromSolution(sol, holes = 18){
+    const puzzle = sol.map(row => row.slice());
+    const coords = [];
+    for (let r = 0; r < SIZE; r++){
+      for (let c = 0; c < SIZE; c++){
+        coords.push([r,c]);
+      }
+    }
+    shuffle(coords);
+    for (let k = 0; k < Math.min(holes, coords.length); k++){
+      const [r,c] = coords[k];
+      puzzle[r][c] = 0;
+    }
+    return puzzle;
+  }
+
+  function loadExample(){
+    const sol = permuteSolution(baseSolution());
+    const puzzle = makePuzzleFromSolution(sol, 18);
+    writeBoard(puzzle, { respectLocked: false });
+    unlockAll();
+    setStatus("Example loaded. Enter your own puzzle anytime.", "ok");
+  }
+
+  /** Wire up buttons **/
+  solveBtn.addEventListener("click", () => {
+    const board = readBoard();
+
+    // Ensure no conflicts before solve
+    for (let r = 0; r < SIZE; r++){
+      for (let c = 0; c < SIZE; c++){
+        const v = board[r][c];
+        if (v && !isValidMove(board, r, c, v)){
+          markConflicts();
+          setStatus("Can’t solve: fix conflicts (red cells) first.", "bad");
+          return;
+        }
+      }
+    }
+
+    const copy = board.map(row => row.slice());
+    const ok = solveBoard(copy);
+    if (!ok){
+      setStatus("No solution found for this grid.", "bad");
+      return;
+    }
+    writeBoard(copy, { respectLocked: true });
+    setStatus("Solved.", "ok");
+  });
+
+  validateBtn.addEventListener("click", validateCurrent);
+  clearBtn.addEventListener("click", clearAll);
+  exampleBtn.addEventListener("click", loadExample);
+  lockBtn.addEventListener("click", lockGivens);
+  unlockBtn.addEventListener("click", unlockAll);
+
+  // Init
+  buildGrid();
+  setStatus("Enter your 6×6 puzzle. Click “Validate” anytime.", "");
+})();
+</script>
+</body>
+</html>

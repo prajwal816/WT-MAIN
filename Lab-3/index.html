@@ -1,0 +1,460 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Neumorphic Calculator</title>
+    <style>
+      :root{
+        --bg: #1a1d21;
+        --panel: #2E3238;
+        --key: #2a2e34;
+        --text: #FFFFFF;
+        --op: #6AFB92;
+        --eq: #FFA500;
+      }
+
+      *{ box-sizing: border-box; }
+      html, body { height: 100%; margin: 0; }
+      body{
+        background: var(--bg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      }
+
+      .calc{
+        width: 320px;
+        padding: 24px 20px 28px;
+        border-radius: 24px;
+        background: var(--panel);
+        box-shadow:
+          12px 12px 24px rgba(0,0,0,.5),
+          -8px -8px 20px rgba(255,255,255,.03);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0;
+      }
+
+      .display{
+        width: 100%;
+        min-height: 90px;
+        padding: 20px 16px 16px;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        overflow: hidden;
+      }
+
+      .screen{
+        color: var(--text);
+        font-weight: 600;
+        font-size: 42px;
+        line-height: 1;
+        text-align: right;
+        white-space: nowrap;
+        user-select: none;
+        transform-origin: right center;
+      }
+
+      .keys{
+        display: grid;
+        grid-template-columns: repeat(4, 64px);
+        grid-template-rows: repeat(5, 64px);
+        gap: 14px;
+        justify-items: center;
+        align-items: center;
+      }
+
+      .key{
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        border: none;
+        cursor: pointer;
+        background: var(--key);
+        box-shadow:
+          8px 8px 16px rgba(0,0,0,.5),
+          -6px -6px 14px rgba(255,255,255,.04);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 17px;
+        font-weight: 600;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      .key:active{
+        box-shadow:
+          inset 6px 6px 12px rgba(0,0,0,.5),
+          inset -4px -4px 8px rgba(255,255,255,.03);
+      }
+
+      .key.op{ color: var(--op); }
+      .key.num{ color: var(--text); }
+
+      .key.eq{
+        background: var(--eq);
+        color: var(--text);
+        box-shadow:
+          8px 8px 16px rgba(0,0,0,.5),
+          -6px -6px 14px rgba(255,255,255,.06);
+      }
+
+      .key.eq:active{
+        box-shadow:
+          inset 6px 6px 12px rgba(0,0,0,.35),
+          inset -4px -4px 8px rgba(255,255,255,.1);
+      }
+
+      @media (max-width: 360px){
+        .calc{ transform: scale(.92); }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="calc" aria-label="Calculator">
+      <div class="display" aria-live="polite">
+        <div id="screen" class="screen">0</div>
+      </div>
+
+      <div class="keys">
+        <button class="key op" data-action="ac">AC</button>
+        <button class="key op" data-action="de">DE</button>
+        <button class="key op" data-action="percent">%</button>
+        <button class="key op" data-action="op" data-value="/">/</button>
+
+        <button class="key num" data-action="num" data-value="7">7</button>
+        <button class="key num" data-action="num" data-value="8">8</button>
+        <button class="key num" data-action="num" data-value="9">9</button>
+        <button class="key op" data-action="op" data-value="*">*</button>
+
+        <button class="key num" data-action="num" data-value="4">4</button>
+        <button class="key num" data-action="num" data-value="5">5</button>
+        <button class="key num" data-action="num" data-value="6">6</button>
+        <button class="key op" data-action="op" data-value="-">-</button>
+
+        <button class="key num" data-action="num" data-value="1">1</button>
+        <button class="key num" data-action="num" data-value="2">2</button>
+        <button class="key num" data-action="num" data-value="3">3</button>
+        <button class="key op" data-action="op" data-value="+">+</button>
+
+        <button class="key num" data-action="num" data-value="00">00</button>
+        <button class="key num" data-action="num" data-value="0">0</button>
+        <button class="key num" data-action="dot" data-value=".">.</button>
+        <button class="key eq" data-action="eq">=</button>
+      </div>
+    </main>
+
+    <script>
+      const screen = document.getElementById("screen");
+      const keys = document.querySelector(".keys");
+
+      let expr = "";
+      let justEvaluated = false;
+
+      function isOp(ch) {
+        return ch === "+" || ch === "-" || ch === "*" || ch === "/";
+      }
+
+      function lastNumberSpan(s) {
+        let i = s.length - 1;
+        while (i >= 0 && s[i] === " ") i--;
+        if (i < 0) return null;
+
+        let end = i + 1;
+        let hasDigit = false;
+        while (i >= 0) {
+          const c = s[i];
+          if ((c >= "0" && c <= "9") || c === ".") {
+            hasDigit = true;
+            i--;
+            continue;
+          }
+          break;
+        }
+        if (!hasDigit) return null;
+
+        let start = i + 1;
+        if (start > 0 && s[start - 1] === "-" && (start - 1 === 0 || isOp(s[start - 2]))) {
+          start = start - 1;
+        }
+        return { start, end, text: s.slice(start, end) };
+      }
+
+      function setScreen(text) {
+        screen.textContent = text;
+        const len = String(text).length;
+        let scale = 1;
+        if (len > 9) scale = 9 / len;
+        if (scale < 0.62) scale = 0.62;
+        screen.style.transform = `scale(${scale})`;
+      }
+
+      function showFromExpr() {
+        setScreen(expr === "" ? "0" : expr);
+      }
+
+      function appendNumber(v) {
+        if (justEvaluated) {
+          expr = "";
+          justEvaluated = false;
+        }
+
+        const span = lastNumberSpan(expr);
+        const lastChar = expr.slice(-1);
+
+        if (expr === "0") expr = "";
+
+        if (v === "00") {
+          if (expr === "" || isOp(lastChar)) {
+            expr += "0";
+          } else {
+            expr += "00";
+          }
+          showFromExpr();
+          return;
+        }
+
+        if (v === "0") {
+          if (span && span.text === "0") {
+            showFromExpr();
+            return;
+          }
+          if (span && span.text === "-0") {
+            showFromExpr();
+            return;
+          }
+        }
+
+        if (span) {
+          const t = span.text;
+          if (t === "0" && v !== ".") {
+            expr = expr.slice(0, span.start) + v + expr.slice(span.end);
+            showFromExpr();
+            return;
+          }
+          if (t === "-0" && v !== ".") {
+            expr = expr.slice(0, span.start) + "-" + v + expr.slice(span.end);
+            showFromExpr();
+            return;
+          }
+        }
+
+        expr += v;
+        showFromExpr();
+      }
+
+      function appendDot() {
+        if (justEvaluated) {
+          expr = "";
+          justEvaluated = false;
+        }
+
+        const span = lastNumberSpan(expr);
+        const lastChar = expr.slice(-1);
+
+        if (expr === "" || isOp(lastChar)) {
+          expr += "0.";
+          showFromExpr();
+          return;
+        }
+
+        if (!span) return;
+        if (span.text.includes(".")) return;
+        expr += ".";
+        showFromExpr();
+      }
+
+      function appendOp(op) {
+        if (expr === "" && op === "-") {
+          expr = "-";
+          showFromExpr();
+          return;
+        }
+
+        if (expr === "" && op !== "-") return;
+
+        if (justEvaluated) justEvaluated = false;
+
+        const last = expr.slice(-1);
+        if (last === ".") return;
+
+        if (isOp(last)) {
+          if (op === "-" && last !== "-") {
+            expr += "-";
+            showFromExpr();
+            return;
+          }
+          expr = expr.slice(0, -1) + op;
+          showFromExpr();
+          return;
+        }
+
+        expr += op;
+        showFromExpr();
+      }
+
+      function doDE() {
+        if (justEvaluated) justEvaluated = false;
+        if (expr.length === 0) {
+          showFromExpr();
+          return;
+        }
+        expr = expr.slice(0, -1);
+        showFromExpr();
+      }
+
+      function doAC() {
+        expr = "";
+        justEvaluated = false;
+        showFromExpr();
+      }
+
+      function doPercent() {
+        if (expr === "" || isOp(expr.slice(-1)) || expr.slice(-1) === ".") return;
+        const span = lastNumberSpan(expr);
+        if (!span) return;
+        const n = Number(span.text);
+        if (!Number.isFinite(n)) return;
+        const pct = n / 100;
+        const repl = formatNumber(pct);
+        expr = expr.slice(0, span.start) + repl + expr.slice(span.end);
+        showFromExpr();
+      }
+
+      function tokenize(s) {
+        const t = [];
+        let i = 0;
+        while (i < s.length) {
+          const c = s[i];
+          if (c === " ") { i++; continue; }
+          if (isOp(c)) {
+            if (c === "-" && (t.length === 0 || t[t.length - 1].type === "op")) {
+              let j = i + 1;
+              let num = "-";
+              let dot = 0;
+              let digits = 0;
+              while (j < s.length) {
+                const d = s[j];
+                if (d >= "0" && d <= "9") { num += d; j++; digits++; continue; }
+                if (d === ".") { if (dot) break; dot = 1; num += "."; j++; continue; }
+                break;
+              }
+              if (digits === 0) return null;
+              t.push({ type: "num", value: Number(num) });
+              i = j;
+              continue;
+            }
+            t.push({ type: "op", value: c });
+            i++;
+            continue;
+          }
+          if ((c >= "0" && c <= "9") || c === ".") {
+            let j = i;
+            let num = "";
+            let dot = 0;
+            let digits = 0;
+            while (j < s.length) {
+              const d = s[j];
+              if (d >= "0" && d <= "9") { num += d; j++; digits++; continue; }
+              if (d === ".") { if (dot) break; dot = 1; num += "."; j++; continue; }
+              break;
+            }
+            if (digits === 0) return null;
+            t.push({ type: "num", value: Number(num) });
+            i = j;
+            continue;
+          }
+          return null;
+        }
+        return t;
+      }
+
+      function evalTokens(tokens) {
+        if (!tokens || tokens.length === 0) return null;
+        if (tokens[0].type !== "num" || tokens[tokens.length - 1].type !== "num") return null;
+        for (let i = 1; i < tokens.length; i++) {
+          if (tokens[i].type === tokens[i - 1].type) return null;
+        }
+
+        const pass1 = [];
+        pass1.push(tokens[0]);
+        for (let i = 1; i < tokens.length; i += 2) {
+          const op = tokens[i].value;
+          const rhs = tokens[i + 1].value;
+          if (op === "*" || op === "/") {
+            const lhs = pass1[pass1.length - 1].value;
+            let v;
+            if (op === "*") v = lhs * rhs;
+            else {
+              if (rhs === 0) return { error: true };
+              v = lhs / rhs;
+            }
+            pass1[pass1.length - 1] = { type: "num", value: v };
+          } else {
+            pass1.push({ type: "op", value: op });
+            pass1.push({ type: "num", value: rhs });
+          }
+        }
+
+        let acc = pass1[0].value;
+        for (let i = 1; i < pass1.length; i += 2) {
+          const op = pass1[i].value;
+          const rhs = pass1[i + 1].value;
+          if (op === "+") acc += rhs;
+          else acc -= rhs;
+        }
+        return { value: acc };
+      }
+
+      function formatNumber(n) {
+        if (!Number.isFinite(n)) return "Error";
+        const abs = Math.abs(n);
+        if (abs !== 0 && (abs >= 1e12 || abs < 1e-8)) {
+          return n.toPrecision(10).replace(/\.?0+e/, "e");
+        }
+        let s = n.toFixed(12);
+        s = s.replace(/\.?0+$/, "");
+        if (s === "-0") s = "0";
+        return s;
+      }
+
+      function doEq() {
+        if (expr === "" || isOp(expr.slice(-1)) || expr.slice(-1) === ".") return;
+        const tokens = tokenize(expr);
+        const res = evalTokens(tokens);
+        if (!res || res.error) {
+          setScreen("Error");
+          expr = "";
+          justEvaluated = true;
+          return;
+        }
+        const out = formatNumber(res.value);
+        setScreen(out);
+        expr = out === "Error" ? "" : out;
+        justEvaluated = true;
+      }
+
+      keys.addEventListener("click", (e) => {
+        const btn = e.target.closest("button");
+        if (!btn) return;
+        const action = btn.dataset.action;
+        const value = btn.dataset.value;
+        if (action === "num") appendNumber(value);
+        else if (action === "dot") appendDot();
+        else if (action === "op") appendOp(value);
+        else if (action === "ac") doAC();
+        else if (action === "de") doDE();
+        else if (action === "percent") doPercent();
+        else if (action === "eq") doEq();
+      });
+
+      showFromExpr();
+    </script>
+  </body>
+</html>

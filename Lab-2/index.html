@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML5 Drag and Drop Interface</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-top-left: #2F2A56;
+            --bg-mid: #24204A;
+            --bg-bottom-right: #1E1B3E;
+            --card-color: #EB486E;
+            --card-text: #FFFFFF;
+            --border-color: #EFEFEF;
+            --text-light: #FFFFFF;
+            --text-muted: rgba(255, 255, 255, 0.7);
+            --shadow-card: 0 4px 12px rgba(0, 0, 0, 0.4);
+        }
+
+        html, body {
+            height: 100%;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, var(--bg-top-left) 0%, var(--bg-mid) 50%, var(--bg-bottom-right) 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: var(--text-light);
+            position: relative;
+        }
+
+        body::after {
+            content: "";
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: -1;
+            background-image:
+                repeating-linear-gradient(0deg,
+                    rgba(0, 0, 0, 0.02) 0px,
+                    rgba(0, 0, 0, 0.02) 1px,
+                    transparent 2px,
+                    transparent 4px),
+                repeating-linear-gradient(90deg,
+                    rgba(0, 0, 0, 0.02) 0px,
+                    rgba(0, 0, 0, 0.02) 1px,
+                    transparent 3px,
+                    transparent 7px);
+            opacity: 0.3;
+            filter: blur(0.5px);
+        }
+
+        .container {
+            max-width: 1200px;
+            width: 100%;
+        }
+
+        h1 {
+            color: var(--text-light);
+            text-align: center;
+            margin-bottom: 40px;
+            font-size: 2.5rem;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+        }
+
+        .workspace {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .drop-zone {
+            background: transparent;
+            border: 2px dashed var(--border-color);
+            border-radius: 12px;
+            padding: 25px;
+            min-height: 400px;
+            transition: all 0.3s ease;
+        }
+
+        .drop-zone.drag-over {
+            border-color: var(--border-color);
+            background: rgba(255, 255, 255, 0.05);
+            transform: scale(1.02);
+        }
+
+        .drop-zone-title {
+            color: var(--text-muted);
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            text-align: center;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .draggable-item {
+            background: var(--card-color);
+            color: var(--card-text);
+            padding: 18px 20px;
+            margin-bottom: 12px;
+            border-radius: 10px;
+            cursor: grab;
+            transition: all 0.2s ease;
+            border: none;
+            box-shadow: var(--shadow-card);
+            user-select: none;
+            font-weight: 500;
+            position: relative;
+        }
+
+        .draggable-item::before {
+            content: "⋮⋮";
+            display: inline-block;
+            margin-right: 12px;
+            font-size: 0.8rem;
+            line-height: 0.5;
+            color: rgba(255, 255, 255, 0.8);
+            letter-spacing: -2px;
+        }
+
+        .draggable-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
+        }
+
+        .draggable-item.dragging {
+            opacity: 0.7;
+            cursor: grabbing;
+            transform: rotate(1deg);
+        }
+
+        .draggable-item:active {
+            cursor: grabbing;
+        }
+
+        .empty-state {
+            color: var(--text-muted);
+            text-align: center;
+            padding: 40px 20px;
+            font-style: italic;
+            font-size: 0.95rem;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+
+            .workspace {
+                grid-template-columns: 1fr;
+            }
+
+            .drop-zone {
+                min-height: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Drag and Drop Interface</h1>
+        <div class="workspace">
+            <div class="drop-zone" id="zone1">
+                <div class="drop-zone-title">To Do</div>
+                <div class="draggable-item" draggable="true" data-id="1">Design Mockups</div>
+                <div class="draggable-item" draggable="true" data-id="2">Code Review</div>
+                <div class="draggable-item" draggable="true" data-id="3">Write Documentation</div>
+            </div>
+            <div class="drop-zone" id="zone2">
+                <div class="drop-zone-title">In Progress</div>
+                <div class="draggable-item" draggable="true" data-id="4">API Integration</div>
+                <div class="draggable-item" draggable="true" data-id="5">Testing</div>
+            </div>
+            <div class="drop-zone" id="zone3">
+                <div class="drop-zone-title">Completed</div>
+                <div class="draggable-item" draggable="true" data-id="6">Project Setup</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let draggedElement = null;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const draggableItems = document.querySelectorAll('.draggable-item');
+            const dropZones = document.querySelectorAll('.drop-zone');
+
+            draggableItems.forEach(item => {
+                item.addEventListener('dragstart', handleDragStart);
+                item.addEventListener('dragend', handleDragEnd);
+            });
+
+            dropZones.forEach(zone => {
+                zone.addEventListener('dragover', handleDragOver);
+                zone.addEventListener('drop', handleDrop);
+                zone.addEventListener('dragenter', handleDragEnter);
+                zone.addEventListener('dragleave', handleDragLeave);
+            });
+        });
+
+        function handleDragStart(e) {
+            draggedElement = this;
+            this.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/html', this.outerHTML);
+        }
+
+        function handleDragEnd(e) {
+            this.classList.remove('dragging');
+            document.querySelectorAll('.drop-zone').forEach(zone => {
+                zone.classList.remove('drag-over');
+            });
+        }
+
+        function handleDragOver(e) {
+            if (e.preventDefault) {
+                e.preventDefault();
+            }
+            e.dataTransfer.dropEffect = 'move';
+            return false;
+        }
+
+        function handleDragEnter(e) {
+            if (this !== draggedElement.parentElement) {
+                this.classList.add('drag-over');
+            }
+        }
+
+        function handleDragLeave(e) {
+            if (!this.contains(e.relatedTarget)) {
+                this.classList.remove('drag-over');
+            }
+        }
+
+        function handleDrop(e) {
+            if (e.stopPropagation) {
+                e.stopPropagation();
+            }
+
+            if (draggedElement !== null && this !== draggedElement.parentElement) {
+                this.classList.remove('drag-over');
+                
+                const emptyState = this.querySelector('.empty-state');
+                if (emptyState) {
+                    emptyState.remove();
+                }
+
+                draggedElement.classList.remove('dragging');
+                this.appendChild(draggedElement);
+
+                updateEmptyStates();
+            }
+
+            return false;
+        }
+
+        function updateEmptyStates() {
+            const dropZones = document.querySelectorAll('.drop-zone');
+            dropZones.forEach(zone => {
+                const items = zone.querySelectorAll('.draggable-item');
+                const emptyState = zone.querySelector('.empty-state');
+                
+                if (items.length === 0 && !emptyState) {
+                    const emptyDiv = document.createElement('div');
+                    emptyDiv.className = 'empty-state';
+                    emptyDiv.textContent = 'Drop items here';
+                    zone.appendChild(emptyDiv);
+                } else if (items.length > 0 && emptyState) {
+                    emptyState.remove();
+                }
+            });
+        }
+
+        updateEmptyStates();
+    </script>
+</body>
+</html>

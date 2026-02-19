@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Color Pattern</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: #ffffff;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(6, 50px);
+            grid-template-rows: repeat(5, 50px);
+            gap: 4px;
+        }
+
+        .cell {
+            width: 50px;
+            height: 50px;
+        }
+
+        .orange { background-color: #ff7a00; }
+        .light { background-color: #ffb67a; }
+        .brown { background-color: #9c3f00; }
+    </style>
+</head>
+<body>
+
+<div class="grid">
+    <!-- Row 1 -->
+    <div class="cell orange"></div>
+    <div class="cell light"></div>
+    <div class="cell brown"></div>
+    <div class="cell orange"></div>
+    <div class="cell light"></div>
+    <div class="cell brown"></div>
+
+    <!-- Row 2 -->
+    <div class="cell light"></div>
+    <div class="cell brown"></div>
+    <div class="cell orange"></div>
+    <div class="cell light"></div>
+    <div class="cell brown"></div>
+    <div class="cell orange"></div>
+
+    <!-- Row 3 -->
+    <div class="cell brown"></div>
+    <div class="cell orange"></div>
+    <div class="cell light"></div>
+    <div class="cell brown"></div>
+    <div class="cell orange"></div>
+    <div class="cell light"></div>
+
+    <!-- Row 4 -->
+    <div class="cell orange"></div>
+    <div class="cell light"></div>
+    <div class="cell brown"></div>
+    <div class="cell orange"></div>
+    <div class="cell light"></div>
+    <div class="cell brown"></div>
+
+    <!-- Row 5 -->
+    <div class="cell light"></div>
+    <div class="cell brown"></div>
+    <div class="cell orange"></div>
+    <div class="cell light"></div>
+    <div class="cell brown"></div>
+    <div class="cell orange"></div>
+</div>
+
+</body>
+</html>
