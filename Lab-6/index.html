@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lab-6: MongoDB Schema & CRUD Operations</title>
+  <style>
+    :root {
+      --bg1: #0f172a;
+      --bg2: #1e293b;
+      --card: rgba(255, 255, 255, 0.05);
+      --line: rgba(255, 255, 255, 0.12);
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --accent: #06b6d4;
+      --accent2: #22c55e;
+      --danger: #ef4444;
+      --warn: #f59e0b;
+      --radius: 12px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color: var(--text);
+      background: linear-gradient(135deg, var(--bg1), var(--bg2));
+      padding: 24px;
+    }
+    .container { max-width: 1000px; margin: 0 auto; }
+    h1 {
+      font-size: 1.6rem;
+      margin: 0 0 8px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .badge {
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(6, 182, 212, 0.2);
+      border: 1px solid rgba(6, 182, 212, 0.4);
+      color: #67e8f9;
+      font-weight: 600;
+    }
+    .subtitle { color: var(--muted); font-size: 14px; margin: 0 0 24px; }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1.2fr;
+      gap: 20px;
+    }
+    @media (max-width: 800px) { .grid { grid-template-columns: 1fr; } }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+    .card h2 { font-size: 1rem; margin: 0 0 16px; color: var(--accent); }
+    label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+    input, select {
+      width: 100%;
+      padding: 10px 12px;
+      margin-bottom: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--bg2);
+      color: var(--text);
+    }
+    .btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+    button {
+      padding: 10px 16px;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .btn-create { background: var(--accent2); color: #0f172a; }
+    .btn-read { background: var(--accent); color: #0f172a; }
+    .btn-update { background: var(--warn); color: #0f172a; }
+    .btn-delete { background: var(--danger); color: white; }
+    button:hover { opacity: 0.9; }
+    .list {
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    .item {
+      background: var(--bg2);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+      margin-bottom: 10px;
+      font-size: 13px;
+    }
+    .item strong { color: var(--accent); }
+    .item .id { font-size: 11px; color: var(--muted); font-family: monospace; }
+    .item .actions { margin-top: 10px; }
+    .item button { padding: 6px 12px; font-size: 12px; margin-right: 6px; }
+    .status {
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      margin-top: 12px;
+    }
+    .status.success { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
+    .status.error { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+    .schema-code {
+      background: var(--bg1);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 16px;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 12px;
+      color: var(--muted);
+      overflow-x: auto;
+      margin-top: 12px;
+    }
+    .schema-code .key { color: #67e8f9; }
+    .schema-code .type { color: #a78bfa; }
+    .schema-code .comment { color: #64748b; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Lab-6: MongoDB CRUD <span class="badge">Schema + Express</span></h1>
+    <p class="subtitle">Create a schema in MongoDB and demonstrate CRUD operations (Create, Read, Update, Delete)</p>
+
+    <div class="grid">
+      <div>
+        <div class="card">
+          <h2>Product Schema (Mongoose)</h2>
+          <pre class="schema-code"><span class="comment">// MongoDB schema definition</span>
+productSchema = {
+  <span class="key">name</span>: <span class="type">String</span> (required),
+  <span class="key">description</span>: <span class="type">String</span>,
+  <span class="key">price</span>: <span class="type">Number</span> (required),
+  <span class="key">category</span>: <span class="type">String</span> (enum),
+  <span class="key">inStock</span>: <span class="type">Boolean</span> (default: true),
+  <span class="key">quantity</span>: <span class="type">Number</span> (default: 0)
+  <span class="comment">// + timestamps (createdAt, updatedAt)</span>
+}</pre>
+        </div>
+
+        <div class="card">
+          <h2>Create / Update Product</h2>
+          <label>Name</label>
+          <input type="text" id="name" placeholder="Product name">
+          <label>Description</label>
+          <input type="text" id="description" placeholder="Optional description">
+          <label>Price</label>
+          <input type="number" id="price" placeholder="99.99" step="0.01">
+          <label>Category</label>
+          <select id="category">
+            <option value="Electronics">Electronics</option>
+            <option value="Clothing">Clothing</option>
+            <option value="Books">Books</option>
+            <option value="Food">Food</option>
+            <option value="Other">Other</option>
+          </select>
+          <label>In Stock</label>
+          <select id="inStock">
+            <option value="true">Yes</option>
+            <option value="false">No</option>
+          </select>
+          <label>Quantity</label>
+          <input type="number" id="quantity" placeholder="0" min="0">
+          <input type="hidden" id="editId">
+          <div class="btn-row">
+            <button class="btn-create" onclick="createProduct()">CREATE</button>
+            <button class="btn-update" onclick="updateProduct()">UPDATE</button>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="card">
+          <h2>Products (Read / Delete)</h2>
+          <button class="btn-read" onclick="readProducts()">READ ALL</button>
+          <div id="list" class="list"></div>
+        </div>
+        <div id="status"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API = '/api/products';
+
+    function showStatus(msg, isError) {
+      const el = document.getElementById('status');
+      el.className = 'status ' + (isError ? 'error' : 'success');
+      el.textContent = msg;
+    }
+
+    function getFormData() {
+      return {
+        name: document.getElementById('name').value.trim(),
+        description: document.getElementById('description').value.trim(),
+        price: parseFloat(document.getElementById('price').value) || 0,
+        category: document.getElementById('category').value,
+        inStock: document.getElementById('inStock').value === 'true',
+        quantity: parseInt(document.getElementById('quantity').value, 10) || 0,
+      };
+    }
+
+    function resetForm() {
+      document.getElementById('editId').value = '';
+      document.getElementById('name').value = '';
+      document.getElementById('description').value = '';
+      document.getElementById('price').value = '';
+      document.getElementById('quantity').value = '0';
+    }
+
+    async function createProduct() {
+      const data = getFormData();
+      if (!data.name || data.price < 0) {
+        showStatus('Name and valid price are required', true);
+        return;
+      }
+      try {
+        const res = await fetch(API, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        });
+        const json = await res.json();
+        if (json.success) {
+          showStatus('Created: ' + json.data.name);
+          resetForm();
+          readProducts();
+        } else showStatus('Error: ' + json.error, true);
+      } catch (e) {
+        showStatus('Network error. Is the server running? Run: npm start', true);
+      }
+    }
+
+    async function readProducts() {
+      try {
+        const res = await fetch(API);
+        const json = await res.json();
+        if (json.success) {
+          const list = document.getElementById('list');
+          if (json.data.length === 0) {
+            list.innerHTML = '<p style="color:var(--muted)">No products yet. Create one!</p>';
+          } else {
+            list.innerHTML = json.data.map((p) => `
+              <div class="item">
+                <div class="id">${p._id}</div>
+                <strong>${p.name}</strong> — $${p.price} (${p.category})<br>
+                <small>${p.description || '-'}</small>
+                <div class="actions">
+                  <button class="btn-update" onclick="editProduct('${p._id}')">Edit</button>
+                  <button class="btn-delete" onclick="deleteProduct('${p._id}')">Delete</button>
+                </div>
+              </div>
+            `).join('');
+          }
+          showStatus('Read ' + json.data.length + ' product(s)');
+        } else showStatus('Error: ' + json.error, true);
+      } catch (e) {
+        showStatus('Network error. Run server: cd Lab-6 && npm install && npm start', true);
+      }
+    }
+
+    async function editProduct(id) {
+      try {
+        const res = await fetch(API + '/' + id);
+        const json = await res.json();
+        if (json.success) {
+          const p = json.data;
+          document.getElementById('editId').value = p._id;
+          document.getElementById('name').value = p.name;
+          document.getElementById('description').value = p.description || '';
+          document.getElementById('price').value = p.price;
+          document.getElementById('category').value = p.category;
+          document.getElementById('inStock').value = String(p.inStock);
+          document.getElementById('quantity').value = p.quantity || 0;
+          showStatus('Editing: ' + p.name);
+        }
+      } catch (e) {
+        showStatus('Error loading product', true);
+      }
+    }
+
+    async function updateProduct() {
+      const id = document.getElementById('editId').value;
+      if (!id) {
+        showStatus('Select a product to edit (click Edit)', true);
+        return;
+      }
+      const data = getFormData();
+      try {
+        const res = await fetch(API + '/' + id, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        });
+        const json = await res.json();
+        if (json.success) {
+          showStatus('Updated: ' + json.data.name);
+          resetForm();
+          readProducts();
+        } else showStatus('Error: ' + json.error, true);
+      } catch (e) {
+        showStatus('Network error', true);
+      }
+    }
+
+    async function deleteProduct(id) {
+      if (!confirm('Delete this product?')) return;
+      try {
+        const res = await fetch(API + '/' + id, { method: 'DELETE' });
+        const json = await res.json();
+        if (json.success) {
+          showStatus('Deleted product');
+          readProducts();
+        } else showStatus('Error: ' + json.error, true);
+      } catch (e) {
+        showStatus('Network error', true);
+      }
+    }
+
+    readProducts();
+  </script>
+</body>
+</html>
