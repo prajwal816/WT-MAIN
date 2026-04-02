@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>React Class Components</title>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    .section { border: 1px solid #ccc; padding: 15px; margin-bottom: 20px; border-radius: 4px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+    th { background-color: #f2f2f2; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    class Counter extends React.Component {
+      constructor(props) {
+        super(props);
+        this.state = { count: 0 };
+      }
+      render() {
+        return (
+          <div className="section">
+            <h3>Counter</h3>
+            <p>Count: {this.state.count}</p>
+            <button onClick={() => this.setState({ count: this.state.count + 1 })}>Increment</button>
+            <button onClick={() => this.setState({ count: this.state.count - 1 })} style={{ marginLeft: '5px' }}>Decrement</button>
+            <button onClick={() => this.setState({ count: 0 })} style={{ marginLeft: '5px' }}>Reset</button>
+          </div>
+        );
+      }
+    }
+
+    class ColorText extends React.Component {
+      constructor(props) {
+        super(props);
+        this.state = { color: 'black' };
+      }
+      render() {
+        return (
+          <div className="section">
+            <h3>Color Text</h3>
+            <p style={{ color: this.state.color, fontWeight: 'bold' }}>This text changes color based on the buttons below!</p>
+            <button onClick={() => this.setState({ color: 'red' })}>Red</button>
+            <button onClick={() => this.setState({ color: 'green' })} style={{ marginLeft: '5px' }}>Green</button>
+            <button onClick={() => this.setState({ color: 'blue' })} style={{ marginLeft: '5px' }}>Blue</button>
+          </div>
+        );
+      }
+    }
+
+    class ObjectTable extends React.Component {
+      constructor(props) {
+        super(props);
+        this.state = {
+          data: [
+            { id: 1, name: 'Alice', age: 25, role: 'Developer' },
+            { id: 2, name: 'Bob', age: 30, role: 'Designer' },
+            { id: 3, name: 'Charlie', age: 28, role: 'Product Manager' }
+          ]
+        };
+      }
+      render() {
+        const { data } = this.state;
+        if (data.length === 0) return <p>No data available</p>;
+        const headers = Object.keys(data[0]);
+
+        return (
+          <div className="section">
+            <h3>Object Table</h3>
+            <table>
+              <thead>
+                <tr>
+                  {headers.map(header => <th key={header}>{header}</th>)}
+                </tr>
+              </thead>
+              <tbody>
+                {data.map(row => (
+                  <tr key={row.id}>
+                    {headers.map(header => <td key={header}>{row[header]}</td>)}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        );
+      }
+    }
+
+    class App extends React.Component {
+      render() {
+        return (
+          <div>
+            <h2>Lab 10 - React Class Components</h2>
+            <Counter />
+            <ColorText />
+            <ObjectTable />
+          </div>
+        );
+      }
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>

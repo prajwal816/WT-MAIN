@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Weather Forecast</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    #chart-container { width: 800px; max-width: 100%; margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <h2>5-Day Weather Forecast</h2>
+  <input type="text" id="city" placeholder="Enter city name" />
+  <button id="get-weather">Get Weather</button>
+  <p id="error" style="color: red;"></p>
+  <div id="chart-container">
+    <canvas id="weatherChart"></canvas>
+  </div>
+
+  <script>
+    const API_KEY = 'YOUR_OPENWEATHERMAP_API_KEY';
+    let chartInstance = null;
+
+    const fetchWeather = async () => {
+      const city = document.getElementById('city').value;
+      const errorEl = document.getElementById('error');
+      errorEl.textContent = '';
+
+      if (!city) {
+        errorEl.textContent = 'Please enter a city name.';
+        return;
+      }
+
+      try {
+        const res = await fetch(`https://api.openweathermap.org/data/2.5/forecast?q=${city}&units=metric&appid=${API_KEY}`);
+        if (!res.ok) throw new Error('City not found or API error');
+        
+        const data = await res.json();
+        
+        const labels = data.list.map(item => item.dt_txt);
+        const temps = data.list.map(item => item.main.temp);
+
+        renderChart(labels, temps, city);
+      } catch (err) {
+        errorEl.textContent = err.message;
+      }
+    };
+
+    const renderChart = (labels, data, city) => {
+      const ctx = document.getElementById('weatherChart').getContext('2d');
+      if (chartInstance) chartInstance.destroy();
+
+      chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: `Temperature in ${city} (°C)`,
+            data: data,
+            borderColor: 'blue',
+            fill: false,
+            tension: 0.1
+          }]
+        }
+      });
+    };
+
+    document.getElementById('get-weather').addEventListener('click', fetchWeather);
+  </script>
+</body>
+</html>
